@@ -22,10 +22,6 @@ export async function getMulticallCallResults(calls: Call[]) {
   const [resultsBlockNumber, returnData] = await multicallContract.aggregate(
     calls.map((call) => [call.address, call.callData])
   );
-  console.log(
-    "🚀 ~ file: updater.ts ~ line 24 ~ getMulticallCallResults ~ returnData",
-    returnData
-  );
   return calls.reduce((acc, call, index) => {
     acc[chainId][toCallKey(call)] = {
       data: returnData[index],

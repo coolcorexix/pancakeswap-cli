@@ -1,9 +1,10 @@
-import { ListenerOptions, OptionalMethodInputs } from "types";
-import { chainId } from "context";
+import { CliCallState, ListenerOptions, OptionalMethodInputs } from "types";
+import { chainId, getCurrentBlockNumber } from "context";
 import { Interface } from "@ethersproject/abi";
 import { INVALID_RESULT, isValidMethodArgs } from "./multicall";
 import { getMulticallCallResults } from "multicall/updater";
 import { toCallKey } from "multicall/actions";
+import { toCallState } from "multicall/toCallState";
 
 export interface Call {
   address: string;
@@ -40,8 +41,7 @@ export async function callMultipleContractForSingleData(
   methodName: string,
   callInputs?: OptionalMethodInputs,
   options?: ListenerOptions
-) {
-  console.log("At callMultipleContractForSingleData");
+): Promise<CliCallState[]> {
   const fragment = contractInterface.getFunction(methodName);
   const callData: string | undefined =
     fragment && isValidMethodArgs(callInputs)
@@ -60,5 +60,6 @@ export async function callMultipleContractForSingleData(
         })
       : [];
 
-  return transformCallsData(calls, options);
+  const callResults = await transformCallsData(calls, options);
+  return callResults.map((result) => toCallState(result, contractInterface, fragment))
 }
