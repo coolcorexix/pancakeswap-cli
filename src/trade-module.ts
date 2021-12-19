@@ -21,7 +21,9 @@ export async function trade(args: {
     tryParseAmount(args.inputAmount.toString(), inputToken),
     outputToken
   );
-
+  if (!bestTradeSoFar) {
+    throw new Error("No trade found 💩💩💩 ");
+  } 
   return {
     totalReceive: Number(bestTradeSoFar.executionPrice.toFixed()) * args.inputAmount,
   };
