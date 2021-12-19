@@ -1,5 +1,5 @@
 import { CliCallState, ListenerOptions, OptionalMethodInputs } from "types";
-import { chainId, getCurrentBlockNumber } from "context";
+import { getChainId, getCurrentBlockNumber } from "context";
 import { Interface } from "@ethersproject/abi";
 import { INVALID_RESULT, isValidMethodArgs } from "./multicall";
 import { getMulticallCallResults } from "multicall/updater";
@@ -23,8 +23,8 @@ async function transformCallsData(
 ): Promise<CallResult[]> {
   const callResults = await getMulticallCallResults(calls);
   return calls.map<CallResult>((call) => {
-    if (!chainId || !call) return INVALID_RESULT;
-    const result = callResults[chainId]?.[toCallKey(call)];
+    if (!getChainId || !call) return INVALID_RESULT;
+    const result = callResults[getChainId()]?.[toCallKey(call)];
     let data;
     if (result?.data && result?.data !== "0x") {
       // eslint-disable-next-line prefer-destructuring

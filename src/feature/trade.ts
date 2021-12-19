@@ -2,7 +2,7 @@ import { Currency, CurrencyAmount, Pair, Token, Trade } from "@pancakeswap/sdk";
 import { createPairs, PairState } from "./createPairs";
 import flatMap from "lodash/flatMap";
 import { BASES_TO_CHECK_TRADES_AGAINST } from "constants/BASE_TRADE_PAIRS";
-import { chainId } from "context";
+import { getChainId } from "context";
 import { wrappedCurrency } from "utils/wrappedCurrency";
 
 export async function createAllCommonPairs(
@@ -10,10 +10,10 @@ export async function createAllCommonPairs(
   currencyB: Currency
 ) {
   const [tokenA, tokenB] = [
-    wrappedCurrency(currencyA, chainId),
-    wrappedCurrency(currencyB, chainId),
+    wrappedCurrency(currencyA, getChainId()),
+    wrappedCurrency(currencyB, getChainId()),
   ];
-  const bases: Token[] = [...BASES_TO_CHECK_TRADES_AGAINST[chainId]];
+  const bases: Token[] = [...BASES_TO_CHECK_TRADES_AGAINST[getChainId()]];
   const basePairs: [Token, Token][] = flatMap(bases, (base): [Token, Token][] =>
     bases.map((otherBase) => [base, otherBase])
   );

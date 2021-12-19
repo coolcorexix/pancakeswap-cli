@@ -1,11 +1,25 @@
 import { ChainId } from "@pancakeswap/sdk";
-import { simpleRpcProvider } from "utils/providers";
+import { initRpcProvider } from "utils/providers";
 
-export const chainId = ChainId.MAINNET;
+let chainId = null;
 
-export const provider = simpleRpcProvider;
+export function setChainId(chainIdValue: ChainId) {
+  chainId = chainIdValue;
+}
+
+export function getChainId() {
+  if (!chainId) {
+    throw new Error("chainId is not set");
+  }
+  return chainId;
+}
+
+export let provider = null;
+export const initProvider = () => {
+  provider = initRpcProvider();
+};
 
 export async function getCurrentBlockNumber() {
-  const currentBlock = await simpleRpcProvider.getBlockNumber();
+  const currentBlock = await provider.getBlockNumber();
   return currentBlock;
 }

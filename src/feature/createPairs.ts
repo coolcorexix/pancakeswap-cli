@@ -1,11 +1,12 @@
 import { Interface } from "@ethersproject/abi";
 import { abi as IUniswapV2PairABI } from "@uniswap/v2-core/build/IUniswapV2Pair.json";
-import { Currency, Pair, TokenAmount } from "@pancakeswap/sdk";
+import { ChainId, Currency, Pair, TokenAmount } from "@pancakeswap/sdk";
 import { wrappedCurrency } from "utils/wrappedCurrency";
-import { chainId } from "context";
+import { getChainId } from "context";
+import { getPairAddressTestnet } from "contract/getPairAddressTestnet";
 import { callMultipleContractForSingleData } from "./callMultipleContractForSingleData";
 
-const PAIR_INTERFACE = new Interface(IUniswapV2PairABI);
+const PAIR_INTERFACE = new Interface(JSON.stringify(IUniswapV2PairABI));
 
 export enum PairState {
   LOADING,
@@ -18,11 +19,16 @@ export async function createPairs(
   currencies: [Currency, Currency][]
 ): Promise<[PairState, Pair | null][]> {
   const tokens = currencies.map(([currencyA, currencyB]) => [
-    wrappedCurrency(currencyA, chainId),
-    wrappedCurrency(currencyB, chainId),
+    wrappedCurrency(currencyA, getChainId()),
+    wrappedCurrency(currencyB, getChainId()),
   ]);
   // dup token pairs [A, B] and [B, A] cause dup pair
   const pairAddresses = tokens.map(([tokenA, tokenB]) => {
+    if (getChainId() === ChainId.TESTNET) {
+      return tokenA && tokenB && !tokenA.equals(tokenB)
+      ? getPairAddressTestnet(tokenA, tokenB)
+      : undefined;
+    }
     return tokenA && tokenB && !tokenA.equals(tokenB)
       ? Pair.getAddress(tokenA, tokenB)
       : undefined;
