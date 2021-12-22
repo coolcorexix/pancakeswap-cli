@@ -1,17 +1,24 @@
+import ReadLine from "readline";
 import { ChainId } from "@pancakeswap/sdk";
 import Commander from "commander";
 import { setChainId } from "context";
 import { trade } from "trade-module";
 
 const program = new Commander.Command();
+const readLine = ReadLine.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+const prompt = (query: string) =>
+  new Promise((resolve) => readLine.question(query, resolve));
 
 program.version("0.0.1");
 
 function pancakeswap() {
   return program
-    .command('pancakeswap')
+    .command("pancakeswap")
     .option("-e, --environment <string>", "Runtime environment", "mainnet")
-    .hook('preAction', (thisCommand) => {
+    .hook("preAction", (thisCommand) => {
       const { environment } = thisCommand.opts();
       switch (environment) {
         case "mainnet":
@@ -40,9 +47,14 @@ pancakeswap()
       inputAmount,
       outputTokenSymbol,
     });
-    console.log(
-      `💸 ${inputAmount} ${inputTokenSymbol} 👉 ${totalReceive} ${outputTokenSymbol}?`
+    const acceptToProceed = await prompt(
+      `💸 ${inputAmount} ${inputTokenSymbol} 👉 ${totalReceive} ${outputTokenSymbol}? (y/N) \n`
     );
+    console.log(
+      "🚀 ~ file: index.ts ~ line 50 ~ .action ~ acceptToProceed",
+      acceptToProceed
+    );
+    process.exit(0);
   });
 
 program.parse(process.argv);
