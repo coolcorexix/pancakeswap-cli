@@ -12,8 +12,6 @@ export async function trade(args: {
 }): Promise<{
   totalReceive: number;
 }> {
-  initProvider();
-  
   const inputToken = getTokenDict()[args.inputTokenSymbol];
   const outputToken = getTokenDict()[args.outputTokenSymbol];
 
