@@ -5,13 +5,14 @@ import { ChainId } from "@pancakeswap/sdk";
 import Commander from "commander";
 import { initProvider, initWallet, setChainId } from "context";
 import { trade } from "trade-module";
+import { approveIfNeeded } from "feature/approve";
 
 const program = new Commander.Command();
 const readLine = ReadLine.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-const prompt = (query: string) =>
+const prompt: (query: string) => Promise<string> = (query: string) =>
   new Promise((resolve) => readLine.question(query, resolve));
 
 program.version("0.0.1");
@@ -55,7 +56,7 @@ pancakeswap()
       inputAmount,
       output: outputTokenSymbol,
     } = cmd.opts();
-    const { totalReceive } = await trade({
+    const { totalReceive, inputToken } = await trade({
       inputTokenSymbol,
       inputAmount,
       outputTokenSymbol,
@@ -63,10 +64,13 @@ pancakeswap()
     const acceptToProceed = await prompt(
       `💸 ${inputAmount} ${inputTokenSymbol} 👉 ${totalReceive} ${outputTokenSymbol}? (y/N) \n`
     );
-    console.log(
-      "🚀 ~ file: index.ts ~ line 50 ~ .action ~ acceptToProceed",
-      acceptToProceed
-    );
+    if (acceptToProceed.toLowerCase() !== "y") {
+      process.exit(0);
+    }
+    await approveIfNeeded({
+      inputToken,
+    });
+
     process.exit(0);
   });
 

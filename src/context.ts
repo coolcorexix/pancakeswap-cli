@@ -3,6 +3,7 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { ChainId } from "@pancakeswap/sdk";
 import { omit } from "lodash";
 import { initRpcProvider } from "utils/providers";
+import { ROUTER_ADDRESS, TESTNET_ROUTER_ADDRESS } from "constants/BASE_TRADE_PAIRS";
 
 let chainId = null;
 
@@ -34,4 +35,14 @@ export const initWallet = async (mnemonic: string) => {
 export async function getCurrentBlockNumber() {
   const currentBlock = await provider.getBlockNumber();
   return currentBlock;
+}
+
+export const getRouterAddress = () => {
+  if (chainId === ChainId.TESTNET) {
+    return TESTNET_ROUTER_ADDRESS;
+  }
+  if (chainId === ChainId.MAINNET) {
+    return ROUTER_ADDRESS;
+  }
+  throw new Error('chainId is not set');
 }

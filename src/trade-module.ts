@@ -11,6 +11,7 @@ export async function trade(args: {
   outputTokenSymbol: string;
 }): Promise<{
   totalReceive: number;
+  inputToken: Token;
 }> {
   const inputToken = getTokenDict()[args.inputTokenSymbol];
   const outputToken = getTokenDict()[args.outputTokenSymbol];
@@ -24,5 +25,6 @@ export async function trade(args: {
   } 
   return {
     totalReceive: Number(bestTradeSoFar.executionPrice.toFixed()) * args.inputAmount,
+    inputToken,
   };
 }
