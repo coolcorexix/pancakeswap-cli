@@ -1,9 +1,9 @@
 import { Wallet } from "@ethersproject/wallet";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { ChainId } from "@pancakeswap/sdk";
-import { omit } from "lodash";
 import { initRpcProvider } from "utils/providers";
 import { ROUTER_ADDRESS, TESTNET_ROUTER_ADDRESS } from "constants/BASE_TRADE_PAIRS";
+import { GAS_PRICE_GWEI } from "constants/gasPrice";
 
 let chainId = null;
 
@@ -24,6 +24,8 @@ export let provider: JsonRpcProvider = null;
 export const initProvider = () => {
   provider = initRpcProvider();
 };
+
+export const gasPrice = GAS_PRICE_GWEI.testnet;
 
 export const initWallet = async (mnemonic: string) => {
   const newWallet = Wallet.fromMnemonic(mnemonic);

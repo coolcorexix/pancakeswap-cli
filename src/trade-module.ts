@@ -1,4 +1,4 @@
-import { Token } from "@pancakeswap/sdk";
+import { Token, Trade } from "@pancakeswap/sdk";
 import { testnetTokens } from "constants/testnetToken";
 import { initProvider } from "context";
 import { getTokenDict } from "feature/trade/getTokenDict";
@@ -10,6 +10,7 @@ export async function trade(args: {
   inputAmount: number;
   outputTokenSymbol: string;
 }): Promise<{
+  bestTradeSoFar: Trade;
   totalReceive: number;
   inputToken: Token;
 }> {
@@ -24,6 +25,7 @@ export async function trade(args: {
     throw new Error("No trade found 💩💩💩 ");
   } 
   return {
+    bestTradeSoFar,
     totalReceive: Number(bestTradeSoFar.executionPrice.toFixed()) * args.inputAmount,
     inputToken,
   };

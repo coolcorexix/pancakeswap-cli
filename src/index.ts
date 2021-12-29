@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { ChainId } from "@pancakeswap/sdk";
 import Commander from "commander";
-import { initProvider, initWallet, setChainId } from "context";
+import { getRouterAddress, initProvider, initWallet, setChainId, wallet } from "context";
 import { trade } from "trade-module";
 import { approveIfNeeded } from "feature/approve";
 
@@ -56,7 +56,7 @@ pancakeswap()
       inputAmount,
       output: outputTokenSymbol,
     } = cmd.opts();
-    const { totalReceive, inputToken } = await trade({
+    const { totalReceive, inputToken, bestTradeSoFar } = await trade({
       inputTokenSymbol,
       inputAmount,
       outputTokenSymbol,
@@ -67,8 +67,11 @@ pancakeswap()
     if (acceptToProceed.toLowerCase() !== "y") {
       process.exit(0);
     }
+    const spender = getRouterAddress();
     await approveIfNeeded({
+      bestTradeSoFar,
       inputToken,
+      spender,
     });
 
     process.exit(0);
