@@ -23,10 +23,11 @@ export async function trade(args: {
   );
   if (!bestTradeSoFar) {
     throw new Error("No trade found 💩💩💩 ");
-  } 
+  }
   return {
     bestTradeSoFar,
-    totalReceive: Number(bestTradeSoFar.executionPrice.toFixed()) * args.inputAmount,
+    totalReceive:
+      Number(bestTradeSoFar.executionPrice.toFixed()) * args.inputAmount,
     inputToken,
   };
 }

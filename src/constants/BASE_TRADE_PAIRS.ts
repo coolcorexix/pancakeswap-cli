@@ -26,6 +26,6 @@ export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.TESTNET]: [
     testnetTokens.wbnb,
     testnetTokens.busd,
-    testnetTokens.usdt,
+    // testnetTokens.usdt,
   ],
 };

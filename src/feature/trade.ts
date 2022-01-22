@@ -1,9 +1,17 @@
-import { Currency, CurrencyAmount, Pair, Token, Trade } from "@pancakeswap/sdk";
+import {
+  Currency,
+  CurrencyAmount,
+  Pair,
+  Token,
+  TokenAmount,
+  Trade,
+} from "@pancakeswap/sdk";
 import { createPairs, PairState } from "./createPairs";
 import flatMap from "lodash/flatMap";
 import { BASES_TO_CHECK_TRADES_AGAINST } from "constants/BASE_TRADE_PAIRS";
 import { getChainId } from "context";
 import { wrappedCurrency } from "utils/wrappedCurrency";
+import { testnetTokens } from "constants/testnetToken";
 
 export async function createAllCommonPairs(
   currencyA: Currency,
@@ -30,19 +38,21 @@ export async function createAllCommonPairs(
   ].filter(([t0, t1]) => t0.address !== t1.address);
   const allPairs = await createPairs(allPairCombinations);
 
-  return Object.values(
+  // no duplicates or empty pairs
+  const finalPairs = Object.values(
     allPairs
       // filter out invalid pairs
-      .filter((result): result is [PairState.EXISTS, Pair] =>
-        Boolean(result[0] === PairState.EXISTS && result[1])
-      )
+      .filter((result): result is [PairState.EXISTS, Pair] => {
+        return Boolean(result[0] === PairState.EXISTS && result[1]);
+      })
       // filter out duplicated pairs
       .reduce<{ [pairAddress: string]: Pair }>((memo, [, curr]) => {
-        memo[curr.liquidityToken.address] =
-          memo[curr.liquidityToken.address] ?? curr;
+        memo[curr.liquidityToken.address] = curr;
         return memo;
       }, {})
   );
+
+  return finalPairs;
 }
 
 export async function tradeExactIn(
@@ -53,8 +63,10 @@ export async function tradeExactIn(
     currencyAmountIn?.currency,
     currencyOut
   );
-  return Trade.bestTradeExactIn(allowedPairs, currencyAmountIn, currencyOut, {
-    maxHops: 3,
-    maxNumResults: 1,
-  })[0] ?? null;
+  return (
+    Trade.bestTradeExactIn(allowedPairs, currencyAmountIn, currencyOut, {
+      maxHops: 3,
+      maxNumResults: 1,
+    })[0] ?? null
+  );
 }
