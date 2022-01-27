@@ -10,3 +10,7 @@ export const getAddress = (address: Address): string => {
 export const getMulticallAddress = () => {
   return getAddress(addresses.multiCall);
 };
+
+export const getRouterAddress = () => {
+  return getAddress(addresses.router);
+};

@@ -1,4 +1,4 @@
-import { BigNumber } from '@ethersproject/bignumber'
+import { BigNumber } from "@ethersproject/bignumber";
 
 // add 10%
 export function calculateGasMargin(value: BigNumber): BigNumber {

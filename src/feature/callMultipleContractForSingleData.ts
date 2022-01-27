@@ -1,5 +1,4 @@
 import { CliCallState, ListenerOptions, OptionalMethodInputs } from "types";
-import { getChainId, getCurrentBlockNumber } from "context";
 import { Interface } from "@ethersproject/abi";
 import { INVALID_RESULT, isValidMethodArgs } from "./multicall";
 import { getMulticallCallResults } from "multicall/updater";

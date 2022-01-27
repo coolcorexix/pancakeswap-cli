@@ -1,16 +1,10 @@
-import { getContract } from "contract/getContract";
-import { getMulticallAddress } from "utils/addressHelpers";
-import MulticallAbi from "abi/Multicall.json";
-import { getChainId, provider } from "context";
+import { getChainId } from "context";
 import { Call } from "feature/callMultipleContractForSingleData";
 import { toCallKey } from "./actions";
+import { getMulticallContract } from "./getMulticallContract";
 
 export async function getMulticallCallResults(calls: Call[]) {
-  const multicallContract = getContract(
-    getMulticallAddress(),
-    MulticallAbi,
-    provider
-  );
+  const multicallContract = getMulticallContract();
     try {
       const [resultsBlockNumber, returnData] = await multicallContract.aggregate(
         calls.map((call) => [call.address, call.callData])

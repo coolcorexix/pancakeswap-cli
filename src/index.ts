@@ -6,6 +6,7 @@ import Commander from "commander";
 import { getRouterAddress, initProvider, initWallet, setChainId, wallet } from "context";
 import { trade } from "trade-module";
 import { approveIfNeeded } from "feature/approve";
+import { swap } from "feature/swap";
 
 const program = new Commander.Command();
 const readLine = ReadLine.createInterface({
@@ -73,8 +74,7 @@ pancakeswap()
       inputToken,
       spender,
     });
-
-    
+    await swap(bestTradeSoFar);
 
     process.exit(0);
   });

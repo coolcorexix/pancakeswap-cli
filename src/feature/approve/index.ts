@@ -1,7 +1,7 @@
 import { MaxUint256 } from "@ethersproject/constants";
-import { CurrencyAmount, ETHER, Token, Trade } from "@pancakeswap/sdk";
+import { ETHER, Token, Trade } from "@pancakeswap/sdk";
 import { getRouterAddress, provider, wallet } from "context";
-import { calculateGasMargin } from "contract/calculateGasMargin";
+import { calculateGasMargin } from "utils/calculateGasMargin";
 import { callWithGasPrice } from "contract/callWithGasPrice";
 import { getTokenContract } from "contract/getTokenContract";
 import { computeSlippageAdjustedAmounts } from "./computeSlippageAdjustedAmount";
