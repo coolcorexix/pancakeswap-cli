@@ -8,3 +8,4 @@ export const INITIAL_ALLOWED_SLIPPAGE = 50
 export const BIPS_BASE = JSBI.BigInt(10000)
 // 20 minutes, denominated in seconds
 export const DEFAULT_DEADLINE_FROM_NOW = 60 * 20
+export const DEFAULT_GAS_LIMIT = 200000

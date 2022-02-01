@@ -1,14 +1,23 @@
 import ReadLine from "readline";
 import fs from "fs";
 import path from "path";
-import { ChainId } from "@pancakeswap/sdk";
+import { ChainId, Token } from "@pancakeswap/sdk";
 import Commander from "commander";
-import { getRouterAddress, initProvider, initWallet, setChainId, wallet } from "context";
+import {
+  getChainId,
+  getRouterAddress,
+  initProvider,
+  initWallet,
+  setChainId,
+  wallet,
+} from "context";
 import { trade } from "trade-module";
 import { approveIfNeeded } from "feature/approve";
 import { swap } from "feature/swap";
+import { getTokenBalances } from "feature/get-token-balances/getTokenBalances";
+import { getTokenDict } from "feature/trade/getTokenDict";
+import { wrapCommand } from "wrap-module";
 
-const program = new Commander.Command();
 const readLine = ReadLine.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -16,7 +25,10 @@ const readLine = ReadLine.createInterface({
 const prompt: (query: string) => Promise<string> = (query: string) =>
   new Promise((resolve) => readLine.question(query, resolve));
 
+const program = new Commander.Command();
 program.version("0.0.1");
+
+// TODO: decompose command logics to smaller modules
 
 function pancakeswap() {
   return program
@@ -46,7 +58,9 @@ function pancakeswap() {
     });
 }
 
-pancakeswap()
+const pancakeSwapCommands = pancakeswap();
+
+pancakeSwapCommands
   .command("trade")
   .option("-i, --input <string>", "Input token symbol")
   .option("-a, --input-amount <number>", "Amount to trade")
@@ -78,5 +92,47 @@ pancakeswap()
 
     process.exit(0);
   });
+
+pancakeSwapCommands
+  .command("get-token-balance")
+  .option("-s, --symbol <string>", "Input token symbol")
+  .option("-a, --address <string>", "Input token address")
+  .action(async (directory, cmd) => {
+    let { symbol: inputTokenSymbol, address: inputTokenAddress } = cmd.opts();
+    let balance;
+    if (inputTokenAddress) {
+      balance = await getTokenBalances(wallet.address, [
+        new Token(getChainId(), inputTokenAddress, 18),
+      ]);
+    } 
+    if (inputTokenSymbol) {
+      const queriedToken = getTokenDict()[inputTokenSymbol];
+      balance = await getTokenBalances(wallet.address, [
+        queriedToken,
+      ]);
+      inputTokenAddress = queriedToken.address;
+    }
+    if (!balance) {
+      console.log('💩 bad token info, try again');
+    }
+    console.log(
+      `🏦 current balance of ${inputTokenSymbol || inputTokenAddress}: ${balance[inputTokenAddress].toFixed()} `
+    );
+
+    process.exit(0);
+  });
+
+pancakeSwapCommands
+  .command("wrap")
+  .option("-u, --unwrap", "Unwrap WBNB to BNB")
+  .option("-a, --amount <string>", "Amount to wrap / unwrap")
+  .action (async (directory, cmd) => {
+      const { unwrap, amount } = cmd.opts();
+      await wrapCommand({
+        depositValue: amount,
+      });
+      process.exit(0);
+  })
+
 
 program.parse(process.argv);
