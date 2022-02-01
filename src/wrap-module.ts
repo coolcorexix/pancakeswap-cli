@@ -1,7 +1,5 @@
-import { BigNumber } from "@ethersproject/bignumber";
-import { currencyEquals, ETHER, Token, WETH } from "@pancakeswap/sdk";
+import { ETHER, WETH } from "constants/index";
 import { getChainId } from "context";
-import { getTokenDict } from "feature/trade/getTokenDict";
 import { wrap, WrapType } from "feature/wrap";
 
 export async function wrapCommand(args: { depositValue: string }) {

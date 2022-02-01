@@ -1,11 +1,12 @@
 import { MaxUint256 } from "@ethersproject/constants";
-import { ETHER, Token, Trade } from "@pancakeswap/sdk";
+import { Token, Trade } from "@pancakeswap/sdk";
 import { getRouterAddress, provider, wallet } from "context";
 import { calculateGasMargin } from "utils/calculateGasMargin";
 import { callWithGasPrice } from "contract/callWithGasPrice";
 import { getTokenContract } from "contract/getTokenContract";
 import { computeSlippageAdjustedAmounts } from "./computeSlippageAdjustedAmount";
 import { getTokenCurrentAllowance } from "./getTokenCurrentAllowance";
+import { ETHER } from "constants/index";
 
 export enum ApprovalState {
   UNKNOWN,

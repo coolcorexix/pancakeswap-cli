@@ -1,12 +1,9 @@
 import {
   ChainId,
   Currency,
-  CurrencyAmount,
-  ETHER,
   Token,
-  TokenAmount,
-  WETH,
 } from "@pancakeswap/sdk";
+import { ETHER, WETH } from "constants/index";
 
 export function wrappedCurrency(
   currency: Currency | undefined,

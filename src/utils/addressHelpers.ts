@@ -1,4 +1,4 @@
-import { ChainId, WETH } from "@pancakeswap/sdk";
+import { ChainId } from "@pancakeswap/sdk";
 import addresses from "constants/contracts";
 import { Address } from "constants/types";
 import { getChainId } from "context";
@@ -12,7 +12,7 @@ export const getMulticallAddress = () => {
 };
 
 export const getWethAddress = () => {
-  return WETH[getChainId()].address;
+  return getAddress(addresses.weth);
 }
 
 export const getRouterAddress = () => {

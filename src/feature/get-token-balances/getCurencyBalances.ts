@@ -1,4 +1,5 @@
-import { Currency, CurrencyAmount, ETHER, Token } from "@pancakeswap/sdk";
+import { Currency, CurrencyAmount, Token } from "@pancakeswap/sdk";
+import { ETHER } from "constants/index";
 import { getBNBBalances } from "./getBNBBalance";
 import { getTokenBalances } from "./getTokenBalances";
 

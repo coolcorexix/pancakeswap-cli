@@ -1,5 +1,5 @@
-import { Currency, currencyEquals, ETHER, WETH } from "@pancakeswap/sdk";
-import { DEFAULT_GAS_LIMIT } from "constants/index";
+import { Currency, currencyEquals } from "@pancakeswap/sdk";
+import { ETHER, WETH } from "constants/index";
 import { gasPrice, getChainId, wallet } from "context";
 import { callWithGasPrice } from "contract/callWithGasPrice";
 import { getWETHContract } from "contract/getWETHContract";
@@ -59,7 +59,7 @@ export async function wrap(
                 console.log(
                   `🧾 Wrap ${inputAmount.toSignificant(
                     6
-                  )} BNB to WBNB receipt: ${txReceipt}`
+                  )} BNB to WBNB receipt: ${txReceipt.hash}`
                 );
               } catch (error) {
                 console.error("Could not deposit", error);
@@ -69,6 +69,7 @@ export async function wrap(
       inputError: sufficientBalance ? undefined : "Insufficient BNB balance",
     };
   }
+  //! This code is untested
   if (
     currencyEquals(WETH[getChainId()], inputCurrency) &&
     outputCurrency === ETHER
@@ -87,7 +88,7 @@ export async function wrap(
                 console.log(
                   `🧾 Unwrap ${inputAmount.toSignificant(
                     6
-                  )} WBNB to BNB receipt: ${txReceipt}`
+                  )} WBNB to BNB receipt: ${txReceipt.hash}`
                 );
               } catch (error) {
                 console.error("Could not withdraw", error);
