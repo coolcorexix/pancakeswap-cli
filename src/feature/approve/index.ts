@@ -100,7 +100,7 @@ export async function approveIfNeeded(args: {
       await approve();
       break;
     case ApprovalState.APPROVED:
-      console.log("👌 already approve");
+      console.log("👌 Already approved");
       return;
   }
 }

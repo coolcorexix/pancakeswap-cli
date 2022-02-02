@@ -17,6 +17,7 @@ import { swap } from "feature/swap";
 import { getTokenBalances } from "feature/get-token-balances/getTokenBalances";
 import { getTokenDict } from "feature/trade/getTokenDict";
 import { wrapCommand } from "wrap-module";
+import { SwapCallbackState } from "feature/swap/types";
 
 const readLine = ReadLine.createInterface({
   input: process.stdin,
@@ -88,7 +89,16 @@ pancakeSwapCommands
       inputToken,
       spender,
     });
-    await swap(bestTradeSoFar);
+    const swapBundle = await swap(bestTradeSoFar);
+    switch (swapBundle.state) {
+      case SwapCallbackState.VALID: {
+        await swapBundle.callback();
+        break;
+      }
+      case SwapCallbackState.INVALID: {
+        console.log(swapBundle.error);
+      }
+    }
 
     process.exit(0);
   });
