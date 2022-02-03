@@ -29,6 +29,7 @@ export async function getSwapCallArguments(
     })
   );
 
+  // this call is not preferred because it does not give user best price
   if (trade.tradeType === TradeType.EXACT_INPUT) {
     swapMethods.push(
       Router.swapCallParameters(trade, {

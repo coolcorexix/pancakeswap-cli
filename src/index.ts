@@ -18,6 +18,7 @@ import { getTokenBalances } from "feature/get-token-balances/getTokenBalances";
 import { getTokenDict } from "feature/trade/getTokenDict";
 import { wrapCommand } from "wrap-module";
 import { SwapCallbackState } from "feature/swap/types";
+import { getCurrencyBalance } from "feature/get-token-balances/getCurrencyBalance";
 
 const readLine = ReadLine.createInterface({
   input: process.stdin,
@@ -92,7 +93,21 @@ pancakeSwapCommands
     const swapBundle = await swap(bestTradeSoFar);
     switch (swapBundle.state) {
       case SwapCallbackState.VALID: {
-        await swapBundle.callback();
+        const txReceipt = await swapBundle.callback();
+        const newInputBalance = (
+          await getCurrencyBalance(
+            wallet.address,
+            bestTradeSoFar.inputAmount.currency
+          )
+        ).toFixed();
+        const newOutputBalance = (
+          await getCurrencyBalance(
+            wallet.address,
+            bestTradeSoFar.outputAmount.currency
+          )
+        ).toFixed()
+        console.log(`🙌 You now have ${newInputBalance} ${inputTokenSymbol} and ${newOutputBalance} ${outputTokenSymbol}`);
+        console.log(`🧾 Tx receipt: ${txReceipt}`);
         break;
       }
       case SwapCallbackState.INVALID: {
@@ -114,19 +129,19 @@ pancakeSwapCommands
       balance = await getTokenBalances(wallet.address, [
         new Token(getChainId(), inputTokenAddress, 18),
       ]);
-    } 
+    }
     if (inputTokenSymbol) {
       const queriedToken = getTokenDict()[inputTokenSymbol];
-      balance = await getTokenBalances(wallet.address, [
-        queriedToken,
-      ]);
+      balance = await getTokenBalances(wallet.address, [queriedToken]);
       inputTokenAddress = queriedToken.address;
     }
     if (!balance) {
-      console.log('💩 bad token info, try again');
+      console.log("💩 bad token info, try again");
     }
     console.log(
-      `🏦 current balance of ${inputTokenSymbol || inputTokenAddress}: ${balance[inputTokenAddress].toFixed()} `
+      `🏦 current balance of ${
+        inputTokenSymbol || inputTokenAddress
+      }: ${balance[inputTokenAddress].toFixed()} `
     );
 
     process.exit(0);
@@ -136,13 +151,12 @@ pancakeSwapCommands
   .command("wrap")
   .option("-u, --unwrap", "Unwrap WBNB to BNB")
   .option("-a, --amount <string>", "Amount to wrap / unwrap")
-  .action (async (directory, cmd) => {
-      const { unwrap, amount } = cmd.opts();
-      await wrapCommand({
-        depositValue: amount,
-      });
-      process.exit(0);
-  })
-
+  .action(async (directory, cmd) => {
+    const { unwrap, amount } = cmd.opts();
+    await wrapCommand({
+      depositValue: amount,
+    });
+    process.exit(0);
+  });
 
 program.parse(process.argv);

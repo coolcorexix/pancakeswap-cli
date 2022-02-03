@@ -1,5 +1,5 @@
 import { Trade } from "@pancakeswap/sdk";
-import { BigNumber } from '@ethersproject/bignumber';
+import { BigNumber } from "@ethersproject/bignumber";
 import { GAS_PRICE } from "constants/gasPrice";
 import { wallet } from "context";
 import { callWithGasPrice } from "contract/callWithGasPrice";
@@ -18,7 +18,7 @@ export async function onSwapCallback(input: {
   trade: Trade;
   recipient: string;
   account: string;
-  gasPrice: typeof GAS_PRICE;
+  gasPrice: GAS_PRICE;
 }): Promise<string> {
   const { gasPrice, swapCalls, trade, recipient, account } = input;
   const estimatedCalls: EstimatedSwapCall[] = await Promise.all(
@@ -27,10 +27,6 @@ export async function onSwapCallback(input: {
         parameters: { methodName, args, value },
         contract,
       } = call;
-      console.log(
-        "🚀 ~ file: onSwapCallback.ts ~ line 27 ~ swapCalls.map ~ args",
-        args
-      );
       const options =
         !value || isZero(value)
           ? {
@@ -85,10 +81,6 @@ export async function onSwapCallback(input: {
       );
     }
   );
-  console.log(
-    "🚀 ~ file: onSwapCallback.ts ~ line 64 ~ successfulEstimation ~ successfulEstimation",
-    successfulEstimation
-  );
   if (!successfulEstimation) {
     const errorCalls = estimatedCalls.filter(
       (call): call is FailedCall => "error" in call
@@ -105,7 +97,7 @@ export async function onSwapCallback(input: {
     },
     gasEstimate,
   } = successfulEstimation;
-  return callWithGasPrice(contract, methodName, ...args as any[], {
+  return callWithGasPrice(contract, methodName, [...(args as any[])], {
     gasLimit: calculateGasMargin(gasEstimate),
     gasPrice: BigNumber.from(gasPrice),
     ...(value && !isZero(value)
@@ -116,27 +108,28 @@ export async function onSwapCallback(input: {
       : {
           from: account,
         }),
-  }).then((response: any) => {
-    const inputSymbol = trade.inputAmount.currency.symbol;
-    const outputSymbol = trade.outputAmount.currency.symbol;
-    const inputAmount = trade.inputAmount.toSignificant(3);
-    const outputAmount = trade.outputAmount.toSignificant(3);
-
-    const base = `Swap ${inputAmount} ${inputSymbol} for ${outputAmount} ${outputSymbol}`;
-    const summaryMessage = `${base} to ${truncateHash(
-      recipient
-    )}, transaction hash: ${response.hash}`;
-
-    return summaryMessage;
   })
-  .catch((error: any) => {
-    // if the user rejected the tx, pass this along
-    if (error?.code === 4001) {
-      throw new Error("Transaction rejected.");
-    } else {
-      // otherwise, the error was unexpected and we need to convey that
-      console.error(`Swap failed`, error, methodName, args, value);
-      throw new Error(`Swap failed: ${error.message}`);
-    }
-  });
+    .then((response: any) => {
+      const inputSymbol = trade.inputAmount.currency.symbol;
+      const outputSymbol = trade.outputAmount.currency.symbol;
+      const inputAmount = trade.inputAmount.toSignificant(3);
+      const outputAmount = trade.outputAmount.toSignificant(3);
+
+      const base = `Swap ${inputAmount} ${inputSymbol} for ${outputAmount} ${outputSymbol}`;
+      const summaryMessage = `${base} to ${truncateHash(
+        recipient
+      )}, transaction hash: ${response.hash}`;
+
+      return summaryMessage;
+    })
+    .catch((error: any) => {
+      // if the user rejected the tx, pass this along
+      if (error?.code === 4001) {
+        throw new Error("Transaction rejected.");
+      } else {
+        // otherwise, the error was unexpected and we need to convey that
+        console.error(`Swap failed`, error, methodName, args, value);
+        throw new Error(`Swap failed: ${error.message}`);
+      }
+    });
 }

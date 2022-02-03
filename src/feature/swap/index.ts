@@ -1,10 +1,10 @@
 import { Trade } from "@pancakeswap/sdk";
 import { INITIAL_ALLOWED_SLIPPAGE } from "constants/index";
-import { GAS_PRICE } from "constants/gasPrice";
 import { getSwapCallArguments } from "./getSwapCallArguments";
-import { getChainId, provider, wallet } from "context";
+import { gasPrice, getChainId, provider, wallet } from "context";
 import { SwapCallbackState } from "./types";
 import { onSwapCallback } from "./onSwapCallback";
+import { GAS_PRICE } from "constants/gasPrice";
 
 export async function swap(
   trade: Trade | undefined, // trade to execute, required
@@ -13,8 +13,7 @@ export async function swap(
   state: SwapCallbackState;
   callback: null | (() => Promise<string>);
   error: string | null;
-}> {
-  const gasPrice = GAS_PRICE;
+}> {  
   const account = wallet.address;
   const recipient = account;
   const swapCalls = await getSwapCallArguments(trade, allowedSlippage);
@@ -37,7 +36,7 @@ export async function swap(
     callback: onSwapCallback.bind(null,{
         swapCalls,
         trade,
-        gasPrice,
+        gasPrice: gasPrice as GAS_PRICE,
         recipient,
         account 
     }),
