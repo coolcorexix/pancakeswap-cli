@@ -18,6 +18,7 @@ export const callWithGasPrice = async (
   overrides: CallOverrides = null
 ): Promise<TransactionResponse> => {
   const hasManualGasPriceOverride = overrides?.gasPrice;
+  console.log('⏳ Please wait, calling the contract might take a little bit long...');
 
   const unsignedTx = await contract.populateTransaction[methodName](
     ...methodArgs,

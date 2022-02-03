@@ -79,7 +79,7 @@ pancakeSwapCommands
       outputTokenSymbol,
     });
     const acceptToProceed = await prompt(
-      `💸 ${inputAmount} ${inputTokenSymbol} 👉 ${totalReceive} ${outputTokenSymbol}? (y/N) \n`
+      `💸 Swap ${inputAmount} ${inputTokenSymbol} 👉 ${totalReceive} ${outputTokenSymbol}? (y/N) \n`
     );
     if (acceptToProceed.toLowerCase() !== "y") {
       process.exit(0);
@@ -106,7 +106,7 @@ pancakeSwapCommands
             bestTradeSoFar.outputAmount.currency
           )
         ).toFixed()
-        console.log(`🙌 You now have ${newInputBalance} ${inputTokenSymbol} and ${newOutputBalance} ${outputTokenSymbol}`);
+        console.log(`🙌 Swap is done, you now have ${newInputBalance} ${inputTokenSymbol} and ${newOutputBalance} ${outputTokenSymbol}`);
         console.log(`🧾 Tx receipt: ${txReceipt}`);
         break;
       }

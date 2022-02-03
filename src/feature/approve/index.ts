@@ -100,7 +100,7 @@ export async function approveIfNeeded(args: {
       await approve();
       break;
     case ApprovalState.APPROVED:
-      console.log("👌 Already approved");
+      console.log(`👌 ${args.inputToken.name} already approved`);
       return;
   }
 }
