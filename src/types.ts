@@ -24,3 +24,25 @@ export interface CliCallState {
   // true if the call was made and is synced, but the return data is invalid
   readonly error: boolean;
 }
+
+export interface BscScanApiTransaction {
+  blockNumber: string;
+  /**unix epoch format */
+  timeStamp: string;
+  hash: string;
+  nonce: string;
+  blockHash: string;
+  transactionIndex: string;
+  from: string;
+  to: string;
+  value: string;
+  gas: string;
+  gasPrice: string;
+  isError: string;
+  txreceipt_status: string;
+  input: string;
+  contractAddress: string;
+  cumulativeGasUsed: string;
+  gasUsed: string;
+  confirmations: string;
+}

@@ -19,6 +19,7 @@ import { getTokenDict } from "feature/trade/getTokenDict";
 import { wrapCommand } from "wrap-module";
 import { SwapCallbackState } from "feature/swap/types";
 import { getCurrencyBalance } from "feature/get-token-balances/getCurrencyBalance";
+import { cakeStakingTrack } from "feature/cake-staking-track";
 
 const readLine = ReadLine.createInterface({
   input: process.stdin,
@@ -158,5 +159,14 @@ pancakeSwapCommands
     });
     process.exit(0);
   });
+
+pancakeSwapCommands
+  .command("cake-staking-track")
+  .option("-ad, --address <string>", "Address to track")
+  .action(async (directory, cmd) => {
+    const { address } = cmd.opts();
+    cakeStakingTrack(address);
+  });
+  
 
 program.parse(process.argv);
