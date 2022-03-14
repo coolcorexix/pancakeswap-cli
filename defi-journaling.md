@@ -157,7 +157,8 @@ __UPDATE__:
 - :app-lore BSC now have this error causing error when decoding input data https://github.com/ChainSafe/web3.js/pull/3948
 - :feature-decide use abi-decoder to avoid problem mentioned above
 - :app-lore CoinGecko does have NodeJs client but it seem outmaintained. Open a new issue today and stand by for reply: https://github.com/miscavage/CoinGecko-API/issues/33
-- :app-lore trying to understand log in transaction lead me to basic theory of keccak hashing: https://en.wikipedia.org/wiki/SHA-3 , https://medium.com/mycrypto/understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378
+- :app-lore trying to understand log in transaction lead me to basic theory of keccak hashing: https://en.wikipedia.org/wiki/SHA-3 , https://medium.com/mycrypto/-  -understanding-event-logs-on-the-ethereum-blockchain-f4ae7ba50378
+- :feature-decide three pools is now set, finishing touch is otw
 
 ```
 

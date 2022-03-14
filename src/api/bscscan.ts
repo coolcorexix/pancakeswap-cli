@@ -7,22 +7,37 @@ import { provider } from "context";
 import { ERC20_INTERFACE } from "contract/interface/erc20";
 
 const cakeSyrupPoolAbi = require("abi/CakeSyrupPool.json");
+const manualCakeSyrupPoolAbi = require("abi/ManualCakeSyrupPool.json");
 
 const bscScanUrl = "https://api.bscscan.com/api";
 const cakeTokenCotractAddress = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
 const stakingPoolContractAddress = "0x1B2A2f6ed4A1401E8C73B4c2B6172455ce2f78E8";
+const autoCakePoolContractAddress =
+  "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC";
+const manualCakePoolContractAddress =
+  "0x73feaa1eE314F8c655E354234017bE2193C9E24E";
 
 async function getCakePriceAtTheTime(unixEpochtimeStamp: number) {
-  const client = new CoinGeckoClient();
-  const timeGap = 60 * 60;
-  const response = await client.contractMarketChartRange({
-    id: "binance-smart-chain" as any,
-    contract_address: cakeTokenCotractAddress,
-    vs_currency: "usd",
-    from: unixEpochtimeStamp - timeGap,
-    to: unixEpochtimeStamp,
-  });
-  return response.prices[0][1];
+  try {
+    const client = new CoinGeckoClient();
+    // 1 hours, probing until we get a valid price up to 5 hours
+    const timeGap = 60 * 60;
+    for (let i = 0; i < 5; i++) {
+      const response = await client.contractMarketChartRange({
+        id: "binance-smart-chain" as any,
+        contract_address: cakeTokenCotractAddress,
+        vs_currency: "usd",
+        from: unixEpochtimeStamp - timeGap * (i + 1),
+        to: unixEpochtimeStamp,
+      });
+      if (!response.prices.length) {
+        continue;
+      }
+      return response.prices[0][1];
+    }
+  } catch {
+    console.log("timestamp with error: ", unixEpochtimeStamp);
+  }
 }
 const DECIMALS = 18;
 
@@ -38,7 +53,8 @@ function getAmountFromMethod(decodedInputData: DecodedMethodInfo) {
 
 interface OutputResponse {
   createdTime: Date;
-  method: 'deposit' | 'withdraw' | 'withdrawAll' | string,
+  txHash: string;
+  method: "deposit" | "withdraw" | "withdrawAll" | "harvest" | string;
   priceAtTheTime: number;
   amountOfToken: number;
   toUSDValue: number;
@@ -91,21 +107,23 @@ export async function getTransactionsFromAccount(
   ).filter((transaction) => {
     return (
       transaction.to.toLocaleLowerCase() ===
-      stakingPoolContractAddress.toLocaleLowerCase()
+      manualCakePoolContractAddress.toLocaleLowerCase() &&
+      !Number(transaction.isError)
     );
   });
-  const interestedMethodNames = ["deposit", "withdraw"];
+  const interestedMethodNames = [];
 
   const outputResponses: Promise<OutputResponse>[] =
     poolInteractingContractTransactions.map(async (t) => {
       const decodedInputData: DecodedMethodInfo = decodeTransactionInputData(
         t.input,
-        cakeSyrupPoolAbi
+        manualCakeSyrupPoolAbi
       );
       if (!interestedMethodNames.includes(decodedInputData.name)) {
         console.log("withdraw all method: ", t.hash);
 
         const transactionReceipt = await provider.getTransactionReceipt(t.hash);
+        console.log("method name: ", decodedInputData.name);
         const priceAtTheTime = await getCakePriceAtTheTime(Number(t.timeStamp));
         const currentPrice = await getCakePriceAtTheTime(Date.now() / 1000);
         const amountOfToken = getAmountOfWithdrawAllFromLogs(
@@ -113,6 +131,7 @@ export async function getTransactionsFromAccount(
         );
         const outputResponse = {
           method: decodedInputData.name,
+          txHash: t.hash,
           createdTime: new Date(Number(t.timeStamp) * 1000),
           priceAtTheTime,
           amountOfToken,
@@ -126,10 +145,12 @@ export async function getTransactionsFromAccount(
         return;
       }
       const amountOfToken = getAmountFromMethod(decodedInputData);
+      console.log("method name: ", decodedInputData.name);
       const priceAtTheTime = await getCakePriceAtTheTime(Number(t.timeStamp));
       const currentPrice = await getCakePriceAtTheTime(Date.now() / 1000);
       const outputResponse = {
         method: decodedInputData.name,
+        txHash: t.hash,
         createdTime: new Date(Number(t.timeStamp) * 1000),
         priceAtTheTime,
         amountOfToken,
