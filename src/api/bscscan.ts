@@ -1,21 +1,79 @@
 import axios from "axios";
+import { getAddress } from "@ethersproject/address";
 import { BscScanApiTransaction } from "types";
 import { Log } from "@ethersproject/abstract-provider";
 import { CoinGeckoClient } from "coingecko-api-v3";
 import { decodeTransactionInputData } from "utils/decodeInputData";
 import { provider } from "context";
 import { ERC20_INTERFACE } from "contract/interface/erc20";
+import { getContract } from "contract/getContract";
 
-const cakeSyrupPoolAbi = require("abi/CakeSyrupPool.json");
-const manualCakeSyrupPoolAbi = require("abi/ManualCakeSyrupPool.json");
+interface StakeContractInfo {
+  name: string;
+  address: string;
+  abi: string;
+  stakingMethods: string[];
+}
+
+const DEPOSIT_METHOD = "deposit";
+const WITHDRAW_METHOD = "withdraw";
+const WITHDRAW_ALL_METHOD = "withdrawAll";
+const ENTER_STAKING_METHOD = "enterStaking";
+const LEAVE_STAKING_METHOD = "leaveStaking";
+const HARVEST_METHOD = "harvest";
 
 const bscScanUrl = "https://api.bscscan.com/api";
-const cakeTokenCotractAddress = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
-const stakingPoolContractAddress = "0x1B2A2f6ed4A1401E8C73B4c2B6172455ce2f78E8";
-const autoCakePoolContractAddress =
-  "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC";
-const manualCakePoolContractAddress =
-  "0x73feaa1eE314F8c655E354234017bE2193C9E24E";
+const cakeTokenContractAddress = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
+//** This token is used to trade for real cake, represent pool share */
+const syrupBarTokenContractAddress =
+  "0x009cF7bC57584b7998236eff51b98A168DceA9B0";
+
+const ifoCakePool: StakeContractInfo = {
+  name: "ifoCakePool",
+  address: "0x1B2A2f6ed4A1401E8C73B4c2B6172455ce2f78E8",
+  abi: require("abi/CakeSyrupPool.json"),
+  stakingMethods: [DEPOSIT_METHOD, WITHDRAW_METHOD, WITHDRAW_ALL_METHOD],
+};
+
+async function getCurrentCakeStakedInAutoPool(inspectingAddress: string) {
+  const autoCakePoolContract = getContract(
+    autoCakePool.address,
+    require("abi/AutoCakePool.json"),
+    provider
+  );
+  const pricePerFullShare = await autoCakePoolContract.getPricePerFullShare();
+  const userShares = await autoCakePoolContract.userInfo(inspectingAddress);
+  return (userShares.shares * pricePerFullShare) / Math.pow(10, DECIMALS * 2);
+}
+
+const autoCakePool: StakeContractInfo = {
+  name: "autoCakePool",
+  address: "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC",
+  abi: require("abi/CakeSyrupPool.json"),
+  stakingMethods: [
+    DEPOSIT_METHOD,
+    WITHDRAW_METHOD,
+    WITHDRAW_ALL_METHOD,
+    HARVEST_METHOD,
+  ],
+};
+
+const inflowMethods = [DEPOSIT_METHOD, ENTER_STAKING_METHOD];
+const outflowMethods = [
+  WITHDRAW_METHOD,
+  WITHDRAW_ALL_METHOD,
+  LEAVE_STAKING_METHOD,
+  HARVEST_METHOD,
+];
+
+const manualCakePool: StakeContractInfo = {
+  name: "manualCakePool",
+  address: "0x73feaa1eE314F8c655E354234017bE2193C9E24E",
+  abi: require("abi/ManualCakeSyrupPool.json"),
+  stakingMethods: [ENTER_STAKING_METHOD, LEAVE_STAKING_METHOD],
+};
+
+const currentPool = manualCakePool;
 
 async function getCakePriceAtTheTime(unixEpochtimeStamp: number) {
   try {
@@ -25,7 +83,7 @@ async function getCakePriceAtTheTime(unixEpochtimeStamp: number) {
     for (let i = 0; i < 5; i++) {
       const response = await client.contractMarketChartRange({
         id: "binance-smart-chain" as any,
-        contract_address: cakeTokenCotractAddress,
+        contract_address: cakeTokenContractAddress,
         vs_currency: "usd",
         from: unixEpochtimeStamp - timeGap * (i + 1),
         to: unixEpochtimeStamp,
@@ -41,10 +99,11 @@ async function getCakePriceAtTheTime(unixEpochtimeStamp: number) {
 }
 const DECIMALS = 18;
 
+//TODO this might not longer be used
 function getAmountFromMethod(decodedInputData: DecodedMethodInfo) {
   switch (decodedInputData.name) {
-    case "deposit":
-    case "withdraw":
+    case DEPOSIT_METHOD:
+    case WITHDRAW_METHOD:
       return Number(decodedInputData.params[0].value) / Math.pow(10, DECIMALS);
     default:
       return 0;
@@ -54,7 +113,7 @@ function getAmountFromMethod(decodedInputData: DecodedMethodInfo) {
 interface OutputResponse {
   createdTime: Date;
   txHash: string;
-  method: "deposit" | "withdraw" | "withdrawAll" | "harvest" | string;
+  method: string;
   priceAtTheTime: number;
   amountOfToken: number;
   toUSDValue: number;
@@ -73,17 +132,82 @@ interface DecodedMethodInfo {
 const transferTopic = ERC20_INTERFACE.getEventTopic("Transfer");
 console.log("🚀 ~ file: bscscan.ts ~ line 68 ~ transferTopic", transferTopic);
 
-function getAmountOfWithdrawAllFromLogs(logs: Log[]) {
-  const transferLog = logs.find((log) => log.topics[0] === transferTopic);
-  return parseInt(transferLog?.data, 16) / Math.pow(10, DECIMALS);
+function getAmountOfTokenTransferFromLogs(
+  logs: Log[],
+  methodName: string,
+  inspectingAddress: string
+) {
+  const transferToAccountLogs = logs.filter((log) => {
+    if (inflowMethods.includes(methodName)) {
+      return (
+        log.topics[0] === transferTopic &&
+        log.topics[1].replace("000000000000000000000000", "") ===
+          inspectingAddress
+      );
+    }
+    if (outflowMethods.includes(methodName)) {
+      return (
+        log.topics[0] === transferTopic &&
+        log.topics[2].replace("000000000000000000000000", "") ===
+          inspectingAddress
+      );
+    }
+  });
+  return transferToAccountLogs.reduce((acc, transferLog) => {
+    return acc + parseInt(transferLog?.data, 16) / Math.pow(10, DECIMALS);
+  }, 0);
+}
+
+function calculateTotalCost(outputResponses: OutputResponse[]): {
+  usdCost: number;
+  cakeCost: number;
+} {
+  return outputResponses
+    .filter((response) => inflowMethods.includes(response.method))
+    .reduce(
+      (acc, curr) => ({
+        usdCost: acc.usdCost + curr.toUSDValue,
+        cakeCost: acc.cakeCost + curr.amountOfToken,
+      }),
+      {
+        usdCost: 0,
+        cakeCost: 0,
+      }
+    );
+}
+
+function calculateTotalProceed(outputResponses: OutputResponse[]): {
+  usdCost: number;
+  cakeCost: number;
+} {
+  return outputResponses
+    .filter((response) => outflowMethods.includes(response.method))
+    .reduce(
+      (acc, curr) => ({
+        usdCost: acc.usdCost + curr.toUSDValue,
+        cakeCost: acc.cakeCost + curr.amountOfToken,
+      }),
+      {
+        usdCost: 0,
+        cakeCost: 0,
+      }
+    );
 }
 
 export async function getTransactionsFromAccount(
-  address: string
+  rawAddress: string
 ): Promise<BscScanApiTransaction[]> {
+  const address = rawAddress.toLowerCase();
+
   console.log(
     "🚀 ~ file: bscscan.ts ~ line 6 ~ getTransactionsFromAccount ~ address",
     address
+  );
+
+  const beingStakedCakes = await getCurrentCakeStakedInAutoPool(address);
+  console.log(
+    "🚀 ~ file: bscscan.ts ~ line 206 ~ beingStakedCakes",
+    beingStakedCakes
   );
 
   const response = await axios.get(bscScanUrl, {
@@ -107,28 +231,36 @@ export async function getTransactionsFromAccount(
   ).filter((transaction) => {
     return (
       transaction.to.toLocaleLowerCase() ===
-      manualCakePoolContractAddress.toLocaleLowerCase() &&
-      !Number(transaction.isError)
+        currentPool.address.toLocaleLowerCase() && !Number(transaction.isError)
     );
   });
-  const interestedMethodNames = [];
+  const interestedMethodNames = currentPool.stakingMethods;
+  const currentPrice = await getCakePriceAtTheTime(Date.now() / 1000);
 
-  const outputResponses: Promise<OutputResponse>[] =
-    poolInteractingContractTransactions.map(async (t) => {
-      const decodedInputData: DecodedMethodInfo = decodeTransactionInputData(
-        t.input,
-        manualCakeSyrupPoolAbi
-      );
-      if (!interestedMethodNames.includes(decodedInputData.name)) {
-        console.log("withdraw all method: ", t.hash);
+  const outputResponses: OutputResponse[] = (
+    await Promise.all(
+      poolInteractingContractTransactions.map(async (t) => {
+        const decodedInputData: DecodedMethodInfo = decodeTransactionInputData(
+          t.input,
+          currentPool.abi
+        );
+        if (!interestedMethodNames.includes(decodedInputData.name)) {
+          console.log(
+            "🚀 ~ file: bscscan.ts ~ line 169 ~ poolInteractingContractTransactions.map ~ decodedInputData",
+            decodedInputData
+          );
+          return;
+        }
 
         const transactionReceipt = await provider.getTransactionReceipt(t.hash);
         console.log("method name: ", decodedInputData.name);
         const priceAtTheTime = await getCakePriceAtTheTime(Number(t.timeStamp));
-        const currentPrice = await getCakePriceAtTheTime(Date.now() / 1000);
-        const amountOfToken = getAmountOfWithdrawAllFromLogs(
-          transactionReceipt.logs
+        const amountOfToken = getAmountOfTokenTransferFromLogs(
+          transactionReceipt.logs,
+          decodedInputData.name,
+          address
         );
+        console.log(`tx: ${t.hash} ${decodedInputData.name} ${amountOfToken}`);
         const outputResponse = {
           method: decodedInputData.name,
           txHash: t.hash,
@@ -138,31 +270,32 @@ export async function getTransactionsFromAccount(
           toUSDValue: priceAtTheTime * amountOfToken,
           efficientComparedToCurrentRate: currentPrice / priceAtTheTime,
         };
-        console.log(
-          "🚀 ~ file: bscscan.ts ~ line 122 ~ poolInteractingContractTransactions.map ~ outputResponse",
-          outputResponse
-        );
-        return;
-      }
-      const amountOfToken = getAmountFromMethod(decodedInputData);
-      console.log("method name: ", decodedInputData.name);
-      const priceAtTheTime = await getCakePriceAtTheTime(Number(t.timeStamp));
-      const currentPrice = await getCakePriceAtTheTime(Date.now() / 1000);
-      const outputResponse = {
-        method: decodedInputData.name,
-        txHash: t.hash,
-        createdTime: new Date(Number(t.timeStamp) * 1000),
-        priceAtTheTime,
-        amountOfToken,
-        toUSDValue: priceAtTheTime * amountOfToken,
-        efficientComparedToCurrentRate: currentPrice / priceAtTheTime,
-      };
-      console.log(
-        "🚀 ~ file: bscscan.ts ~ line 111 ~ poolInteractingContractTransactions.map ~ outputResponse",
-        outputResponse
-      );
-      return outputResponse;
-    });
+        return outputResponse;
+      })
+    )
+  ).filter((response) => !!response);
+  const totalCost = calculateTotalCost(outputResponses);
+  console.log("🚀 ~ file: bscscan.ts ~ line 180 ~ totalCost", totalCost);
+  const totalProceed = calculateTotalProceed(outputResponses);
+  console.log("🚀 ~ file: bscscan.ts ~ line 199 ~ totalProceed", totalProceed);
+  console.log(
+    `${currentPool.name} USD gain / loss: `,
+    beingStakedCakes * currentPrice + totalProceed.usdCost - totalCost.usdCost
+  );
+  console.log(
+    `${currentPool.name} deposited CAKE: `,
+    totalCost.cakeCost - totalProceed.cakeCost
+  );
+  console.log(
+    `earned cakes from staking: ${
+      beingStakedCakes + totalProceed.cakeCost - totalCost.cakeCost
+    }`
+  );
+  console.log(
+    `DCA cake price (including rewards): ${
+      (totalCost.usdCost - totalProceed.usdCost) / beingStakedCakes
+    }`
+  );
 
   return response.data.result;
 }
