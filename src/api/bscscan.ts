@@ -35,17 +35,6 @@ const ifoCakePool: StakeContractInfo = {
   stakingMethods: [DEPOSIT_METHOD, WITHDRAW_METHOD, WITHDRAW_ALL_METHOD],
 };
 
-async function getCurrentCakeStakedInAutoPool(inspectingAddress: string) {
-  const autoCakePoolContract = getContract(
-    autoCakePool.address,
-    require("abi/AutoCakePool.json"),
-    provider
-  );
-  const pricePerFullShare = await autoCakePoolContract.getPricePerFullShare();
-  const userShares = await autoCakePoolContract.userInfo(inspectingAddress);
-  return (userShares.shares * pricePerFullShare) / Math.pow(10, DECIMALS * 2);
-}
-
 const autoCakePool: StakeContractInfo = {
   name: "autoCakePool",
   address: "0xa80240Eb5d7E05d3F250cF000eEc0891d00b51CC",
@@ -73,7 +62,22 @@ const manualCakePool: StakeContractInfo = {
   stakingMethods: [ENTER_STAKING_METHOD, LEAVE_STAKING_METHOD],
 };
 
-const currentPool = manualCakePool;
+const currentPool = autoCakePool;
+
+async function getCurrentCakeStakedInCurrentPool(inspectingAddress: string) {
+  if (currentPool.name === "autoCakePool") {
+    const autoCakePoolContract = getContract(
+      autoCakePool.address,
+      require("abi/AutoCakePool.json"),
+      provider
+    );
+    const pricePerFullShare = await autoCakePoolContract.getPricePerFullShare();
+    const userShares = await autoCakePoolContract.userInfo(inspectingAddress);
+    return (userShares.shares * pricePerFullShare) / Math.pow(10, DECIMALS * 2);
+  }
+
+  return undefined;
+}
 
 async function getCakePriceAtTheTime(unixEpochtimeStamp: number) {
   try {
@@ -204,7 +208,7 @@ export async function getTransactionsFromAccount(
     address
   );
 
-  const beingStakedCakes = await getCurrentCakeStakedInAutoPool(address);
+  const beingStakedCakes = await getCurrentCakeStakedInCurrentPool(address);
   console.log(
     "🚀 ~ file: bscscan.ts ~ line 206 ~ beingStakedCakes",
     beingStakedCakes
@@ -253,14 +257,13 @@ export async function getTransactionsFromAccount(
         }
 
         const transactionReceipt = await provider.getTransactionReceipt(t.hash);
-        console.log("method name: ", decodedInputData.name);
         const priceAtTheTime = await getCakePriceAtTheTime(Number(t.timeStamp));
         const amountOfToken = getAmountOfTokenTransferFromLogs(
           transactionReceipt.logs,
           decodedInputData.name,
           address
         );
-        console.log(`tx: ${t.hash} ${decodedInputData.name} ${amountOfToken}`);
+        // console.log(`tx: ${t.hash} ${decodedInputData.name} ${amountOfToken}`);
         const outputResponse = {
           method: decodedInputData.name,
           txHash: t.hash,
@@ -274,10 +277,9 @@ export async function getTransactionsFromAccount(
       })
     )
   ).filter((response) => !!response);
+  console.table(outputResponses, Object.keys(outputResponses[0]));
   const totalCost = calculateTotalCost(outputResponses);
-  console.log("🚀 ~ file: bscscan.ts ~ line 180 ~ totalCost", totalCost);
   const totalProceed = calculateTotalProceed(outputResponses);
-  console.log("🚀 ~ file: bscscan.ts ~ line 199 ~ totalProceed", totalProceed);
   console.log(
     `${currentPool.name} USD gain / loss: `,
     beingStakedCakes * currentPrice + totalProceed.usdCost - totalCost.usdCost
