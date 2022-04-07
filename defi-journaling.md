@@ -179,3 +179,11 @@ This should be next to find out why 2-way trading is not equivalent.
 - :app-lore removeLiquidityETH is the function to get CAKE token out of IFO and claim the reward. Reference: https://bscscan.com/tx/0xfd3bbc4bbbfbefd00ef28f4e4cf5624312c309ea3764bd9a6f921c1261de22ab , use this for liquidity-related features
 
 ```
+
+## Trying to land a 3K jobs
+
+- Pancakeswap use streaming fast to query token price compared to BNB values. fetch derived price: https://github-coolcorexix/pancakeswap/pancake-frontend/blob/master/src/state/swap/fetch/fetchDerivedPriceData.ts#L78
+- In the case of price of direct pair, use a graphql client (bitquery service). fetch pair price: https://github-coolcorexix/pancakeswap/pancake-frontend/blob/master/src/state/swap/fetch/fetchPairPriceData.ts#L20
+- The app try to calculate price base on liquidity of the direct pool but if it has not enough liquidity it tried to calculate based on BNB price of each token. https://github-coolcorexix/pancakeswap/pancake-frontend/blob/master/src/state/swap/fetch/utils.ts#L32
+- data is usually cached, if not fetchAndUpdatePairPrice will be triggered https://github-coolcorexix/pancakeswap/pancake-frontend/blob/master/src/state/swap/hooks.ts#L384
+- search Icon name in the storybook of ui-kit, start it with `yarn workspace @pancakeswap/uikit start `
